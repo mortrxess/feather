@@ -24,6 +24,12 @@ jobs:
           agvtool new-version -all $(git rev-parse HEAD)
           make
 
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipa
+          path: packages/*
+
       - name: Get Version
         id: get_version
         run: |
