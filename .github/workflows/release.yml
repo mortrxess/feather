@@ -17,12 +17,30 @@ jobs:
 
       - name: Prepare dependencies (Xcode)
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.3.0.app
+          XCODE=$(ls -d /Applications/Xcode_26*.app | grep -vi beta | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "${XCODE:-/Applications/Xcode_26.3.0.app}"
+          xcodebuild -version
+
+      # Xcode 26 sometimes crashes ("count of array differs from count of index set")
+      # while resolving packages; resolve up front, retrying, into the same DerivedData `make` uses
+      - name: Resolve Swift packages
+        run: |
+          for i in 1 2 3 4; do
+            xcodebuild -resolvePackageDependencies \
+              -project Feather.xcodeproj \
+              -scheme Feather \
+              -derivedDataPath "$TMPDIR/Feather/iphoneos" \
+              -skipPackagePluginValidation && exit 0
+            echo "Resolve attempt $i failed, retrying..."
+            sleep 5
+          done
+          exit 1
 
       - name: Build
-        run: | 
+        run: |
           agvtool new-version -all $(git rev-parse HEAD)
-          make iphoneos
+          make iphoneos || { echo "Build failed, retrying once..."; make iphoneos; }
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
