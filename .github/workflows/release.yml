@@ -22,7 +22,7 @@ jobs:
       - name: Build
         run: | 
           agvtool new-version -all $(git rev-parse HEAD)
-          make
+          make iphoneos
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
